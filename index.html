@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Simulasi Pythagoras: Layang-Layang</title>
+    <style>
+        :root {
+            --primary: #4A90E2;
+            --accent: #FF6B6B;
+            --success: #2ECC71;
+            --bg: #F0F4F8;
+            --text: #333;
+            --panel: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            background: var(--primary);
+            color: white;
+            width: 100%;
+            padding: 15px 20px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        /* Canvas Container */
+        .canvas-wrapper {
+            width: 100%;
+            height: 45vh; 
+            min-height: 300px;
+            /* Background langit statis, awan digambar di canvas */
+            background: linear-gradient(to bottom, #87CEEB 0%, #E0F7FA 80%, #8D6E63 80%, #795548 100%);
+            position: relative;
+            overflow: hidden;
+            border-bottom: 2px solid #ccc;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Controls */
+        .controls {
+            width: 100%;
+            padding: 20px;
+            background: var(--panel);
+            border-radius: 0 0 15px 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        .slider-group {
+            margin-bottom: 15px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .slider-value {
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        input[type=range] {
+            width: 100%;
+            height: 8px;
+            background: #ddd;
+            border-radius: 5px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        /* Buttons */
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .btn-calc {
+            width: 100%; 
+            padding: 15px;
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s;
+            box-shadow: 0 4px 0 #D64545;
+        }
+
+        .btn-upload {
+            display: none; /* Disembunyikan secara default */
+            flex: 1;
+            padding: 15px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #2980b9;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .btn-calc:active, .btn-upload:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+
+        /* Results & Explanation */
+        .explanation-card {
+            width: 90%;
+            max-width: 500px;
+            background: white;
+            margin: 20px auto;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: none; 
+            border-left: 5px solid var(--success);
+        }
+
+        .explanation-card.active {
+            display: block;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .step {
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed #eee;
+        }
+
+        .step:last-child {
+            border: none;
+            margin-bottom: 0;
+        }
+
+        .math-highlight {
+            font-family: 'Courier New', monospace;
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            color: #d35400;
+        }
+
+        .final-result {
+            text-align: center;
+            font-size: 1.3rem;
+            color: var(--success);
+            font-weight: bold;
+            margin-top: 15px;
+            padding: 10px;
+            background: #e8f8f5;
+            border-radius: 8px;
+        }
+
+        .theory-box {
+            font-size: 0.85rem;
+            color: #666;
+            background: #f9f9f9;
+            padding: 15px;
+            margin: 20px;
+            border-radius: 8px;
+            max-width: 500px;
+            line-height: 1.5;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Layout */
+        .app-layout {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            align-items: center;
+        }
+
+        .sidebar {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-bottom: 20px;
+        }
+
+        /* Landscape Mode */
+        @media (orientation: landscape) {
+            body { height: 100vh; overflow: hidden; }
+            header { display: none; }
+            .app-layout { flex-direction: row; height: 100%; align-items: stretch; }
+            .canvas-wrapper { flex: 1; height: 100% !important; border-bottom: none; border-right: 2px solid #ccc; max-width: none; }
+            .sidebar { width: 340px; height: 100%; overflow-y: auto; background: var(--bg); min-width: 300px; max-width: none; box-shadow: -2px 0 10px rgba(0,0,0,0.1); display: block; }
+            .controls { border-radius: 0; box-shadow: none; padding-bottom: 10px; }
+            .theory-box { margin: 10px 20px 40px 20px; }
+        }
+
+        @media (max-height: 600px) and (orientation: portrait) {
+            canvas { height: 250px; }
+            .btn-calc { padding: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Misi Layang-Layang</h1>
+        <div class="subtitle">Penerapan Teorema Pythagoras</div>
+    </header>
+
+    <div class="app-layout">
+        <div class="canvas-wrapper">
+            <canvas id="gameCanvas"></canvas>
+        </div>
+
+        <div class="sidebar">
+            <div class="controls">
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Panjang Benang (Sisi Miring)</span>
+                        <span class="slider-value" id="val-c">250 m</span>
+                    </div>
+                    <input type="range" id="input-c" min="100" max="400" value="250" step="10">
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Jarak Anak (Alas)</span>
+                        <span class="slider-value" id="val-a">70 m</span>
+                    </div>
+                    <input type="range" id="input-a" min="10" max="300" value="70" step="10">
+                </div>
+
+                <!-- Hidden Inputs for logic -->
+                <input type="file" id="char-upload" accept="image/*" style="display: none;">
+
+                <div class="btn-group">
+                    <button class="btn-calc" onclick="calculate()">🔍 Hitung Ketinggian</button>
+                    <!-- Tombol Ganti Karakter -->
+                    <button class="btn-upload" id="btn-upload-ui" onclick="document.getElementById('char-upload').click()">📸 Ganti Karakter</button>
+                </div>
+            </div>
+
+            <div id="result-area" class="explanation-card">
+                <h3>Langkah Perhitungan:</h3>
+                <div class="step">
+                    <strong>Diketahui:</strong><br>
+                    Sisi Miring (c) = <span id="disp-c">250</span> m<br>
+                    Alas (a) = <span id="disp-a">70</span> m
+                </div>
+                <div class="step">
+                    <strong>Rumus Pythagoras:</strong><br>
+                    <span class="math-highlight">a² + b² = c²</span> atau <span class="math-highlight">b = √(c² - a²)</span>
+                </div>
+                <div class="step">
+                    <strong>Substitusi:</strong><br>
+                    b = √(<span id="calc-c2">62500</span> - <span id="calc-a2">4900</span>)<br>
+                    b = √<span id="calc-sub">57600</span>
+                </div>
+                <div class="final-result">
+                    🎉 Tinggi = <span id="res-b">240</span> meter!
+                </div>
+            </div>
+
+            <div class="theory-box">
+                <strong>💡 Konsep:</strong>
+                Dalam segitiga siku-siku, kuadrat sisi miring (panjang benang) sama dengan jumlah kuadrat kedua sisi lainnya (jarak datar dan tinggi).
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const GAMBAR_PERMANEN = ""; 
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // DOM Elements
+        const inputC = document.getElementById('input-c');
+        const inputA = document.getElementById('input-a');
+        const valC = document.getElementById('val-c');
+        const valA = document.getElementById('val-a');
+        const resultCard = document.getElementById('result-area');
+        const charUpload = document.getElementById('char-upload');
+        const btnUploadUI = document.getElementById('btn-upload-ui');
+
+        // State Math
+        let c = 250;
+        let a = 70;
+        let b = 0;
+        let showTriangle = false;
+        let scale = 0.8;
+        
+        // Custom Image State
+        let customCharImg = new Image();
+        let useCustomChar = false;
+
+        // --- SISTEM AWAN (Clouds) ---
+        const clouds = [];
+        const NUM_CLOUDS = 5;
+
+        // Inisialisasi Awan
+        function initClouds() {
+            for(let i=0; i<NUM_CLOUDS; i++) {
+                clouds.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * (canvas.height * 0.5), // Hanya di separuh atas
+                    speed: 0.2 + Math.random() * 0.3, // Kecepatan acak
+                    size: 0.5 + Math.random() * 0.8, // Ukuran acak
+                    opacity: 0.4 + Math.random() * 0.4
+                });
+            }
+        }
+
+        // Gambar satu awan
+        function drawCloud(x, y, s, opacity) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(s, s);
+            ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+            ctx.beginPath();
+            ctx.arc(-25, 0, 20, 0, Math.PI * 2);
+            ctx.arc(0, -10, 25, 0, Math.PI * 2);
+            ctx.arc(25, 0, 20, 0, Math.PI * 2);
+            ctx.arc(10, 10, 15, 0, Math.PI * 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // Update posisi dan gambar semua awan
+        function updateAndDrawClouds() {
+            for(let cloud of clouds) {
+                // Gambar
+                drawCloud(cloud.x, cloud.y, cloud.size, cloud.opacity);
+                
+                // Gerakkan
+                cloud.x -= cloud.speed;
+                
+                // Reset jika keluar layar kiri
+                if (cloud.x < -100) {
+                    cloud.x = canvas.width + 100;
+                    cloud.y = Math.random() * (canvas.height * 0.5);
+                }
+            }
+        }
+
+        // --- Image Logic ---
+        if (GAMBAR_PERMANEN.length > 50) {
+            customCharImg.src = GAMBAR_PERMANEN;
+            customCharImg.onload = function() {
+                useCustomChar = true;
+            };
+        } else {
+            // Aktifkan tombol upload jika tidak ada gambar permanen (opsional)
+             btnUploadUI.style.display = 'flex'; 
+        }
+
+        charUpload.addEventListener('change', function(e) {
+            if (e.target.files && e.target.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    customCharImg.src = event.target.result;
+                    customCharImg.onload = function() {
+                        useCustomChar = true;
+                    }
+                }
+                reader.readAsDataURL(e.target.files[0]);
+            }
+        });
+
+        // Resize
+        function resizeCanvas() {
+            const container = document.querySelector('.canvas-wrapper');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            // Re-init clouds to fit new width
+            if (clouds.length === 0) initClouds();
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        // Input Handling
+        inputC.addEventListener('input', (e) => {
+            c = parseInt(e.target.value);
+            if (c <= a) {
+                a = c - 10;
+                if (a < 10) a = 10;
+                inputA.value = a;
+                valA.textContent = a + " m";
+            }
+            valC.textContent = c + " m";
+            showTriangle = false;
+            resultCard.classList.remove('active');
+        });
+
+        inputA.addEventListener('input', (e) => {
+            a = parseInt(e.target.value);
+            if (a >= c) {
+                c = a + 10;
+                inputC.value = c;
+                valC.textContent = c + " m";
+            }
+            valA.textContent = a + " m";
+            showTriangle = false;
+            resultCard.classList.remove('active');
+        });
+
+        function calculate() {
+            const c2 = c * c;
+            const a2 = a * a;
+            const diff = c2 - a2;
+            b = Math.sqrt(diff);
+            
+            document.getElementById('disp-c').textContent = c;
+            document.getElementById('disp-a').textContent = a;
+            document.getElementById('calc-c2').textContent = c2.toLocaleString('id-ID');
+            document.getElementById('calc-a2').textContent = a2.toLocaleString('id-ID');
+            document.getElementById('calc-sub').textContent = diff.toLocaleString('id-ID');
+            
+            const displayB = Number.isInteger(b) ? b : b.toFixed(2);
+            document.getElementById('res-b').textContent = displayB;
+
+            resultCard.classList.add('active');
+            showTriangle = true;
+            
+            setTimeout(() => {
+                const element = document.getElementById('result-area');
+                if (element) {
+                     element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }, 100);
+        }
+
+        // --- MAIN GAME LOOP (ANIMATION) ---
+        function gameLoop() {
+            // 1. Clear Canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 2. Draw & Animate Clouds (Background)
+            updateAndDrawClouds();
+
+            // 3. Draw Scene Components
+            const groundY = canvas.height * 0.8;
+            const startX = 50;
+            const maxDimension = Math.max(c, 400); 
+            const availableHeight = groundY - 30;
+            scale = availableHeight / maxDimension;
+
+            const pixelA = a * scale;
+            const currentB = Math.sqrt((c*c) - (a*a));
+            const pixelB = currentB * scale;
+
+            const childX = startX;
+            const childY = groundY;
+            const kiteX = startX + pixelA;
+            const kiteY = groundY - pixelB;
+
+            // Draw Triangle Overlay
+            if (showTriangle) {
+                ctx.beginPath();
+                ctx.moveTo(childX, childY);
+                ctx.lineTo(kiteX, childY);
+                ctx.lineTo(kiteX, kiteY);
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(46, 204, 113, 0.2)';
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.moveTo(kiteX, kiteY);
+                ctx.lineTo(kiteX, childY);
+                ctx.strokeStyle = '#e74c3c';
+                ctx.setLineDash([5, 5]);
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                ctx.fillStyle = '#c0392b';
+                ctx.font = 'bold 14px Arial';
+                ctx.fillText('t = ?', kiteX + 10, childY - (pixelB / 2));
+                
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.rect(kiteX - 15, childY - 15, 15, 15);
+                ctx.stroke();
+            }
+
+            // Draw String
+            ctx.beginPath();
+            let stringStartX = childX + 22;
+            let stringStartY = childY - 58;
+            
+            if (useCustomChar) {
+                stringStartX = childX + 20; 
+                stringStartY = childY - 50;
+            }
+
+            ctx.moveTo(stringStartX, stringStartY); 
+            ctx.lineTo(kiteX, kiteY);
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2; 
+            ctx.stroke();
+            
+            if (showTriangle) {
+                ctx.beginPath();
+                ctx.moveTo(childX, childY);
+                ctx.lineTo(kiteX, childY);
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                ctx.fillStyle = '#333';
+                ctx.font = 'bold 12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(a + ' m', childX + (pixelA / 2), childY + 20);
+            }
+
+            // Draw Child
+            if (useCustomChar && customCharImg.complete && customCharImg.naturalHeight !== 0) {
+                const maxH = 100; 
+                const ratio = customCharImg.width / customCharImg.height;
+                const drawH = maxH;
+                const drawW = maxH * ratio;
+                ctx.drawImage(customCharImg, childX - (drawW/3), childY - drawH + 10, drawW, drawH);
+            } else {
+                drawChild(childX, childY);
+            }
+
+            // Draw Kite
+            drawKite(kiteX, kiteY);
+
+            // Request next frame
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- Drawing Helpers ---
+        function drawChild(x, y) {
+            ctx.save();
+            ctx.translate(x, y);
+            const s = 0.9;
+            ctx.scale(s, s);
+            
+            const skinColor = '#FFDFC4';
+            const hairColor = '#5D4037';
+            const shirtGreen = '#8BC34A';
+            const shirtBlue = '#1565C0';
+            const pantsRed = '#FF3D00';
+            const shoesBlue = '#1565C0';
+            const hatYellow = '#FFEB3B';
+            const hatBlue = '#1565C0';
+            const spoolOrange = '#FF9800';
+
+            // Lengan Kanan & Gulungan
+            ctx.save();
+            ctx.rotate(-0.1);
+            ctx.strokeStyle = shirtGreen; ctx.lineWidth = 9; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(5, -45); ctx.lineTo(-5, -35); ctx.stroke();
+            ctx.strokeStyle = shirtBlue; ctx.lineWidth = 9;
+            ctx.beginPath(); ctx.moveTo(-5, -35); ctx.lineTo(-9, -31); ctx.stroke();
+            ctx.translate(-10, -30);
+            ctx.fillStyle = spoolOrange; ctx.beginPath(); ctx.rect(-6, -12, 12, 24); ctx.fill();
+            ctx.fillStyle = '#E65100'; ctx.beginPath(); ctx.ellipse(0, -12, 6, 3, 0, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(0, 12, 6, 3, 0, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = skinColor; ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI*2); ctx.fill();
+            ctx.restore();
+
+            // Kaki
+            ctx.fillStyle = skinColor; ctx.beginPath(); ctx.moveTo(0, -25); ctx.lineTo(-8, -10); ctx.lineTo(0, 0); ctx.lineTo(10, -25); ctx.fill();
+            ctx.fillStyle = shoesBlue; ctx.beginPath(); ctx.ellipse(0, 0, 8, 5, 0.5, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(0, 3, 8, 2, 0.5, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = skinColor; ctx.beginPath(); ctx.moveTo(8, -25); ctx.lineTo(18, -10); ctx.lineTo(18, 0); ctx.lineTo(8, -25); ctx.fill();
+            ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.rect(14, -5, 8, 6); ctx.fill();
+            ctx.fillStyle = shoesBlue; ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(28, 5); ctx.lineTo(14, 8); ctx.fill();
+            ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(28, 5, 3.5, 0, Math.PI*2); ctx.fill();
+
+            // Badan
+            ctx.fillStyle = shirtGreen; ctx.beginPath(); ctx.rect(-12, -55, 26, 35); ctx.fill();
+            ctx.fillStyle = pantsRed; ctx.beginPath(); ctx.moveTo(-12, -25); ctx.lineTo(14, -25); ctx.lineTo(18, -12); ctx.lineTo(2, -15); ctx.lineTo(-15, -15); ctx.fill();
+            ctx.fillStyle = shirtBlue; ctx.beginPath(); ctx.rect(-12, -42, 26, 10); ctx.fill();
+            ctx.strokeStyle = shirtBlue; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-5, -55); ctx.lineTo(1, -50); ctx.lineTo(7, -55); ctx.stroke();
+
+            // Lengan Kiri
+            ctx.strokeStyle = shirtGreen; ctx.lineWidth = 9; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(12, -50); ctx.lineTo(20, -58); ctx.stroke();
+            ctx.strokeStyle = shirtBlue; ctx.lineWidth = 9; ctx.beginPath(); ctx.moveTo(20, -58); ctx.lineTo(23, -61); ctx.stroke();
+            ctx.fillStyle = skinColor; ctx.beginPath(); ctx.arc(25, -65, 5, 0, Math.PI*2); ctx.fill();
+
+            // Kepala
+            ctx.fillStyle = skinColor; ctx.beginPath(); ctx.rect(-4, -60, 10, 8); ctx.fill();
+            ctx.fillStyle = skinColor; ctx.beginPath(); ctx.arc(1, -68, 15, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(-14, -68, 4.5, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = '#E0C0A0'; ctx.lineWidth = 1; ctx.stroke();
+
+            ctx.fillStyle = hairColor; ctx.beginPath(); ctx.arc(1, -68, 15, Math.PI, 0); ctx.lineTo(15, -65); ctx.lineTo(15, -60); ctx.lineTo(-12, -60); ctx.fill();
+
+            ctx.fillStyle = hatYellow; ctx.beginPath(); ctx.arc(1, -73, 15, Math.PI, 0); ctx.fill();
+            ctx.fillStyle = hatBlue; ctx.beginPath(); ctx.arc(1, -88, 2, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = hatBlue; ctx.beginPath(); ctx.moveTo(8, -73); ctx.quadraticCurveTo(28, -70, 16, -64); ctx.lineTo(8, -73); ctx.fill();
+
+            ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(8, -68, 2, 3.5, 0, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(0, -68, 2, 3.5, 0, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(8.5, -69, 1, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(0.5, -69, 1, 0, Math.PI*2); ctx.fill();
+            
+            ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 0.5;
+            ctx.beginPath(); ctx.arc(5, -60, 5, 0, Math.PI, false); ctx.fill(); ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawKite(x, y) {
+            ctx.save();
+            ctx.translate(x, y);
+            const angle = Math.atan2(Math.sqrt(c*c - a*a), a); 
+            ctx.rotate((Math.PI/2) - angle - 0.2); 
+
+            ctx.fillStyle = '#f1c40f';
+            ctx.beginPath(); ctx.moveTo(0, -35); ctx.lineTo(28, 0); ctx.lineTo(0, 45); ctx.lineTo(-28, 0); ctx.closePath(); ctx.fill();
+            ctx.lineWidth = 2; ctx.strokeStyle = '#f39c12'; ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, -35); ctx.lineTo(0, 45); ctx.moveTo(-28, 0); ctx.lineTo(28, 0); ctx.strokeStyle = '#d35400'; ctx.lineWidth = 1.5; ctx.stroke();
+
+            drawRibbon(-28, 0, '#3498db', -1);
+            drawRibbon(28, 0, '#e74c3c', 1);
+
+            ctx.beginPath(); ctx.moveTo(0, 45); ctx.bezierCurveTo(15, 70, -25, 110, 5, 140); 
+            ctx.strokeStyle = '#555'; ctx.lineWidth = 1; ctx.stroke();
+
+            drawTailFlag(5, 65, '#e74c3c');
+            drawTailFlag(-10, 95, '#3498db');
+            drawTailFlag(-5, 120, '#f1c40f');
+
+            ctx.restore();
+        }
+
+        function drawRibbon(x, y, color, direction) {
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.quadraticCurveTo(x + (direction * 15), y + 15, x + (direction * 5), y + 25);
+            ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.stroke();
+        }
+
+        function drawTailFlag(x, y, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 10, y + 5); ctx.lineTo(x + 2, y + 12); ctx.closePath(); ctx.fill();
+        }
+
+        // Start
+        resizeCanvas();
+        initClouds();
+        gameLoop(); // Start Animation Loop
+        
+    </script>
+</body>
+</html>
